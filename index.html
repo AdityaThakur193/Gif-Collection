@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="A minimal, professional GIF collection curated for creative inspiration">
+    <meta name="theme-color" content="#0D0D0D">
+    <title>GIF Collection</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="header-content">
+            <a href="#" class="logo">GIF Collection</a>
+            <nav>
+                <ul>
+                    <li><a href="#home">Home</a></li>
+                    <li><a href="#gallery">Gallery</a></li>
+                    <li><a href="#about">About</a></li>
+                    <button class="theme-toggle" aria-label="Toggle theme" id="themeToggle">
+                        <i class="fas fa-moon" id="themeIcon"></i>
+                    </button>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero" id="home">
+        <div class="hero-content">
+            <h1>GIF Collection</h1>
+            <p>A curated selection of high-quality animated GIFs for design reference and creative inspiration.</p>
+            <a href="#gallery" class="cta-button">Browse Gallery</a>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <main>
+        <!-- About Section -->
+        <section class="about-section" id="about">
+            <div class="about-hero">
+                <h1>About This Project</h1>
+                <p>A clean, minimal interface for browsing high-quality animated GIFs. Built with modern web technologies and a focus on performance.</p>
+            </div>
+
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🎨</div>
+                    <h3>Curated Collection</h3>
+                    <p>260+ high-quality animated GIFs organized and ready to browse</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🌓</div>
+                    <h3>Theme Toggle</h3>
+                    <p>Seamless dark/light mode switching with preference persistence</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <h3>Fast Loading</h3>
+                    <p>Lazy loading and progressive display for optimal performance</p>
+                </div>
+            </div>
+
+            <div class="tech-stack">
+                <h2>Built With</h2>
+                <div class="tech-list">
+                    • HTML5, CSS3, JavaScript (ES6+)<br>
+                    • CSS Grid & Flexbox for layouts<br>
+                    • Vanilla JS for fast interactions<br>
+                    • LocalStorage for persistence<br>
+                    • Lazy loading for performance
+                </div>
+            </div>
+
+            <div class="purpose-section">
+                <p>Created as a portfolio project to demonstrate clean UI/UX design, responsive development, and modern frontend best practices.</p>
+            </div>
+
+            <div class="about-footer">
+                <h2>Get In Touch</h2>
+                <div class="about-actions">
+                    <a href="https://github.com/AdityaThakur193" target="_blank" class="about-btn">View GitHub</a>
+                    <a href="https://www.linkedin.com/in/aditya-thakur193" target="_blank" class="about-btn">LinkedIn</a>
+                </div>
+                <p class="about-footer-text">© 2026 GIF Collection. Built with care.</p>
+            </div>
+        </section>
+
+        <!-- Gallery Section -->
+        <section id="gallery">
+            <!-- Slideshow Controls -->
+            <div class="slideshow-controls">
+                <button class="slideshow-btn" id="randomBtn">
+                    <i class="fas fa-random"></i> Random GIF
+                </button>
+                <button class="slideshow-btn" id="slideshowBtn">
+                    <i class="fas fa-play"></i> <span id="slideshowText">Start Slideshow</span>
+                </button>
+            </div>
+
+            <!-- Grid Density Controls -->
+            <div class="grid-controls">
+                <label>Grid:</label>
+                <button class="density-btn" data-columns="2">2</button>
+                <button class="density-btn" data-columns="3">3</button>
+                <button class="density-btn active" data-columns="4">4</button>
+                <button class="density-btn" data-columns="5">5</button>
+            </div>
+
+            <!-- Gallery Grid -->
+            <div class="gallery" id="gallery-grid"></div>
+
+            <!-- Load More -->
+            <div class="load-more-container">
+                <button class="load-more-btn" id="loadMoreBtn">Load More</button>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal -->
+    <div class="modal" id="gifModal">
+        <button class="modal-nav prev" id="prevBtn" aria-label="Previous">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+        <div class="modal-content">
+            <button class="modal-close" id="closeModal" aria-label="Close">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="modal-gif-container" id="modalGifContainer">
+                <img id="modalGif" class="modal-gif" alt="">
+            </div>
+            <h2 class="modal-title" id="modalTitle"></h2>
+            <div class="modal-info" id="modalInfo"></div>
+            <div class="modal-metadata" id="modalMetadata"></div>
+            
+            <div class="modal-actions">
+                <button class="modal-btn primary" id="downloadBtn">
+                    <i class="fas fa-download"></i> Download
+                </button>
+            </div>
+            
+            <div class="modal-toolbar">
+                <button class="modal-btn" id="copyLinkBtn">
+                    <i class="fas fa-link"></i>
+                </button>
+
+                <button class="modal-btn" id="fullscreenBtn">
+                    <i class="fas fa-expand"></i>
+                </button>
+            </div>
+            
+            <div class="zoom-controls">
+                <button class="zoom-btn" id="zoomOutBtn"><i class="fas fa-minus"></i></button>
+                <button class="zoom-btn" id="zoomResetBtn"><i class="fas fa-undo"></i></button>
+                <button class="zoom-btn" id="zoomInBtn"><i class="fas fa-plus"></i></button>
+            </div>
+        </div>
+        <button class="modal-nav next" id="nextBtn" aria-label="Next">
+            <i class="fas fa-chevron-right"></i>
+        </button>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="social-links">
+                <a href="https://github.com/AdityaThakur193" target="_blank" rel="noopener noreferrer" title="GitHub">
+                    <i class="fab fa-github"></i>
+                </a>
+                <a href="https://www.linkedin.com/in/aditya-thakur193" target="_blank" rel="noopener noreferrer" title="LinkedIn">
+                    <i class="fab fa-linkedin"></i>
+                </a>
+            </div>
+            <p class="footer-text">© 2026 GIF Collection. Curated with care. • Press <kbd>?</kbd> for keyboard shortcuts</p>
+        </div>
+    </footer>
+
+    <!-- Back to Top Button -->
+    <button class="back-to-top" id="backToTop">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+
+    <!-- Keyboard Help Modal -->
+    <div class="help-modal" id="helpModal">
+        <div class="help-content">
+            <h2>Keyboard Shortcuts</h2>
+            <div class="help-shortcuts">
+                <div class="help-shortcut">
+                    <span class="help-key">?</span>
+                    <span class="help-desc">Show this help</span>
+                </div>
+                <div class="help-shortcut">
+                    <span class="help-key">Esc</span>
+                    <span class="help-desc">Close modal/help</span>
+                </div>
+                <div class="help-shortcut">
+                    <span class="help-key">←</span>
+                    <span class="help-desc">Previous GIF</span>
+                </div>
+                <div class="help-shortcut">
+                    <span class="help-key">→</span>
+                    <span class="help-desc">Next GIF</span>
+                </div>
+                <div class="help-shortcut">
+                    <span class="help-key">F</span>
+                    <span class="help-desc">Toggle fullscreen</span>
+                </div>
+                <div class="help-shortcut">
+                    <span class="help-key">S</span>
+                    <span class="help-desc">Toggle slideshow</span>
+                </div>
+                <div class="help-shortcut">
+                    <span class="help-key">R</span>
+                    <span class="help-desc">Random GIF</span>
+                </div>
+                <div class="help-shortcut">
+                    <span class="help-key">+/-</span>
+                    <span class="help-desc">Zoom in/out</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="data.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

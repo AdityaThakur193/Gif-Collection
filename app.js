@@ -7,6 +7,9 @@ const LOAD_INCREMENT = 24;
 let currentColumns = 4;
 let slideshowInterval = null;
 let currentZoom = 1;
+let lastFocusedElement = null;
+let trapFocusListener = null;
+const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
 const GIF_BASE = 'Gif_Dump/';
 const resolveSrc = (src) => src.startsWith(GIF_BASE) ? src : `${GIF_BASE}${src}`;
@@ -33,31 +36,48 @@ function setupTooltips() {
 function renderGallery() {
     const gallery = document.getElementById('gallery-grid');
     const toDisplay = filteredGifs.slice(0, displayedCount);
-    
+
     // Update grid columns
     gallery.style.gridTemplateColumns = `repeat(${currentColumns}, 1fr)`;
-    
-    gallery.innerHTML = toDisplay.map((gif, index) => {
+
+    // Clear existing nodes safely
+    while (gallery.firstChild) {
+        gallery.removeChild(gallery.firstChild);
+    }
+
+    toDisplay.forEach((gif, index) => {
         const resolvedSrc = resolveSrc(gif.src);
-        return `
-        <div class="gif-card loading" data-index="${index}">
-            <img src="${resolvedSrc}" alt="${gif.title}" loading="lazy" onload="this.parentElement.classList.remove('loading')">
-            <div class="gif-card-overlay">
-                <div class="gif-title">${gif.title}</div>
-            </div>
-        </div>
-    `}).join('');
+        const card = document.createElement('div');
+        card.className = 'gif-card loading';
+        card.dataset.index = index;
+
+        const img = document.createElement('img');
+        img.src = resolvedSrc;
+        img.alt = gif.title;
+        img.loading = 'lazy';
+        img.decoding = 'async';
+        img.addEventListener('load', () => {
+            card.classList.remove('loading');
+        });
+
+        const overlay = document.createElement('div');
+        overlay.className = 'gif-card-overlay';
+
+        const title = document.createElement('div');
+        title.className = 'gif-title';
+        title.textContent = gif.title;
+
+        overlay.appendChild(title);
+        card.appendChild(img);
+        card.appendChild(overlay);
+
+        card.addEventListener('click', () => openModal(index));
+        gallery.appendChild(card);
+    });
 
     // Hide load more if all displayed
     const loadMoreBtn = document.getElementById('loadMoreBtn');
     loadMoreBtn.style.display = displayedCount >= filteredGifs.length ? 'none' : 'block';
-
-    // Add click listeners
-    gallery.querySelectorAll('.gif-card').forEach((card, idx) => {
-        card.addEventListener('click', (e) => {
-            openModal(idx);
-        });
-    });
 }
 
 // Setup Event Listeners
@@ -178,6 +198,7 @@ function openModal(index) {
     const modal = document.getElementById('gifModal');
     const img = document.getElementById('modalGif');
     const container = document.getElementById('modalGifContainer');
+    lastFocusedElement = document.activeElement;
     
     img.src = resolvedSrc;
     resetZoom();
@@ -195,9 +216,10 @@ function openModal(index) {
     // Load image metadata
     img.onload = () => {
         const fileSize = 'N/A'; // File size would need server support
-        document.getElementById('modalMetadata').textContent = 
-            `Dimensions: ${img.naturalWidth} × ${img.naturalHeight}px`;
+            document.getElementById('modalMetadata').textContent = 
+                `Dimensions: ${img.naturalWidth} × ${img.naturalHeight}px`;
     };
+    enableModalFocusTrap();
     
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
@@ -215,7 +237,35 @@ function closeModal() {
     
     document.getElementById('gifModal').classList.remove('active');
     document.body.style.overflow = '';
+    const modal = document.getElementById('gifModal');
+    if (trapFocusListener) {
+        modal.removeEventListener('keydown', trapFocusListener);
+        trapFocusListener = null;
+    }
+    if (lastFocusedElement && typeof lastFocusedElement.focus === 'function') {
+        lastFocusedElement.focus();
+    }
     history.replaceState(null, '', window.location.pathname);
+}
+
+function enableModalFocusTrap() {
+    const modal = document.getElementById('gifModal');
+    const focusables = Array.from(modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'));
+    if (!focusables.length) return;
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    trapFocusListener = (e) => {
+        if (e.key !== 'Tab') return;
+        if (e.shiftKey && document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+        }
+    };
+    modal.addEventListener('keydown', trapFocusListener);
+    first.focus();
 }
 
 function nextGif() {
@@ -292,6 +342,11 @@ function toggleSlideshow() {
 }
 
 function startSlideshow() {
+    if (prefersReducedMotion.matches) {
+        const btn = document.getElementById('slideshowBtn');
+        btn.title = 'Disabled due to reduced motion preference';
+        return;
+    }
     const btn = document.getElementById('slideshowBtn');
     btn.classList.add('active');
     btn.querySelector('i').className = 'fas fa-pause';
@@ -336,18 +391,8 @@ function initTheme() {
 
 function updateThemeIcon(theme) {
     const icon = document.getElementById('themeIcon');
-    icon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+    icon.className = theme === 'dark' ? 'fas fa-moon' : 'fas fa-sun';
 }
-
-document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('themeToggle').addEventListener('click', () => {
-        const currentTheme = document.documentElement.getAttribute('data-theme');
-        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-        document.documentElement.setAttribute('data-theme', newTheme);
-        localStorage.setItem('theme', newTheme);
-        updateThemeIcon(newTheme);
-    });
-});
 
 // Navigation and About Section
 function setupNavigation() {
@@ -386,6 +431,13 @@ function setupNavigation() {
 
 // Initialize on load
 window.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('themeToggle').addEventListener('click', () => {
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+        updateThemeIcon(newTheme);
+    });
     initTheme();
     init();
     setupNavigation();

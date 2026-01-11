@@ -84,6 +84,7 @@ function init() {
     setupScrollListener();
     setupTooltips();
     setupPinchToZoom();
+    initZoomResponsiveGrid();
 }
 
 // Setup tooltips for modal buttons
@@ -100,8 +101,7 @@ function renderGallery() {
     const gallery = document.getElementById('gallery-grid');
     const toDisplay = filteredGifs.slice(0, displayedCount);
 
-    // Update grid columns
-    gallery.style.gridTemplateColumns = `repeat(${currentColumns}, 1fr)`;
+    // Grid columns are managed via CSS variable --gallery-columns
 
     // Clear existing nodes safely
     while (gallery.firstChild) {
@@ -537,3 +537,53 @@ window.addEventListener('DOMContentLoaded', () => {
     init();
     setupNavigation();
 });
+
+// Zoom-responsive grid columns
+let baselineDPR = window.devicePixelRatio || 1;
+
+function getZoomRatio() {
+    // Compute zoom ratio relative to baseline to handle retina screens
+    const currentDPR = window.devicePixelRatio || 1;
+    return currentDPR / baselineDPR;
+}
+
+function computeColumnsForZoom(zoomRatio) {
+    // Default thresholds; tweak as needed
+    // zoomRatio ≥ 1.25 → 2 columns
+    // 1.1 ≤ zoomRatio < 1.25 → 3 columns
+    // 0.9 ≤ zoomRatio < 1.1 → 4 columns (normal)
+    // 0.75 ≤ zoomRatio < 0.9 → 5 columns
+    // zoomRatio < 0.75 → 6 columns
+    let cols;
+    if (zoomRatio >= 1.25) cols = 2;
+    else if (zoomRatio >= 1.1) cols = 3;
+    else if (zoomRatio >= 0.9) cols = 4;
+    else if (zoomRatio >= 0.75) cols = 5;
+    else cols = 6;
+
+    // Cap columns based on viewport width for responsiveness
+    const vw = Math.min(window.innerWidth, document.documentElement.clientWidth);
+    if (vw < 480) cols = Math.min(cols, 2);
+    else if (vw < 768) cols = Math.min(cols, 3);
+
+    // Also respect a max cap
+    cols = Math.max(1, Math.min(cols, 7));
+    return cols;
+}
+
+function applyGalleryColumns(columns) {
+    document.documentElement.style.setProperty('--gallery-columns', String(columns));
+}
+
+const updateZoomColumns = debounce(() => {
+    const ratio = getZoomRatio();
+    const cols = computeColumnsForZoom(ratio);
+    applyGalleryColumns(cols);
+}, 50);
+
+function initZoomResponsiveGrid() {
+    // Establish baseline DPR at load
+    baselineDPR = window.devicePixelRatio || 1;
+    updateZoomColumns();
+    window.addEventListener('resize', updateZoomColumns, { passive: true });
+}

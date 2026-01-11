@@ -215,6 +215,17 @@ main {
     grid-template-columns: repeat(4, 1fr);
     gap: 16px;
     margin-bottom: 48px;
+    /* Allow vertical scrolling but let app handle pinch gestures */
+    touch-action: pan-y;
+}
+
+/* Responsive Grid via CSS variable */
+.gallery-grid {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(var(--gallery-columns, 4), minmax(0, 1fr));
+    margin-bottom: 48px;
+    touch-action: pan-y;
 }
 
 .gif-card {

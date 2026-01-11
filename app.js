@@ -14,6 +14,68 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
 const GIF_BASE = 'Gif_Dump/';
 const resolveSrc = (src) => src.startsWith(GIF_BASE) ? src : `${GIF_BASE}${src}`;
 
+// Utility: Debounce function to limit event firing rate
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// Pinch-to-zoom for mobile grid control
+let initialPinchDistance = 0;
+let isPinching = false;
+
+function setupPinchToZoom() {
+    const gallery = document.getElementById('gallery-grid');
+    
+    gallery.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 2) {
+            isPinching = true;
+            initialPinchDistance = Math.hypot(
+                e.touches[0].pageX - e.touches[1].pageX,
+                e.touches[0].pageY - e.touches[1].pageY
+            );
+        }
+    }, { passive: true });
+    
+    gallery.addEventListener('touchmove', (e) => {
+        if (isPinching && e.touches.length === 2) {
+            const currentDistance = Math.hypot(
+                e.touches[0].pageX - e.touches[1].pageX,
+                e.touches[0].pageY - e.touches[1].pageY
+            );
+            
+            const delta = currentDistance - initialPinchDistance;
+            
+            // Adjust grid columns based on pinch gesture
+            if (Math.abs(delta) > 50) { // Threshold to prevent too sensitive changes
+                if (delta > 0 && currentColumns > 1) {
+                    // Pinch out - fewer columns (larger items)
+                    currentColumns = Math.max(1, currentColumns - 1);
+                    renderGallery();
+                    initialPinchDistance = currentDistance;
+                } else if (delta < 0 && currentColumns < 5) {
+                    // Pinch in - more columns (smaller items)
+                    currentColumns = Math.min(5, currentColumns + 1);
+                    renderGallery();
+                    initialPinchDistance = currentDistance;
+                }
+            }
+        }
+    }, { passive: true });
+    
+    gallery.addEventListener('touchend', () => {
+        isPinching = false;
+        initialPinchDistance = 0;
+    }, { passive: true });
+}
+
 // Initialize
 function init() {
     loadFromHash();
@@ -21,6 +83,7 @@ function init() {
     setupEventListeners();
     setupScrollListener();
     setupTooltips();
+    setupPinchToZoom();
 }
 
 // Setup tooltips for modal buttons
@@ -180,14 +243,16 @@ function setupEventListeners() {
 
 // Scroll listener for back to top button
 function setupScrollListener() {
-    window.addEventListener('scroll', () => {
+    const handleScroll = debounce(() => {
         const backToTop = document.getElementById('backToTop');
         if (window.scrollY > 500) {
             backToTop.classList.add('visible');
         } else {
             backToTop.classList.remove('visible');
         }
-    });
+    }, 100);
+    
+    window.addEventListener('scroll', handleScroll, { passive: true });
 }
 
 // Modal Functions
@@ -297,29 +362,57 @@ function copyLink() {
     const gif = filteredGifs[currentIndex];
     const gifIndex = gifData.findIndex(g => g.src === gif.src) + 1;
     const url = `${window.location.origin}${window.location.pathname}#gif-${gifIndex}`;
-    navigator.clipboard.writeText(url).then(() => {
-        const btn = document.getElementById('copyLinkBtn');
-        const originalText = btn.innerHTML;
-        btn.innerHTML = '<i class="fas fa-check"></i>';
-        btn.title = 'Copied!';
-        setTimeout(() => {
-            btn.innerHTML = originalText;
-            btn.title = 'Copy Link';
-        }, 2000);
-    });
+    
+    if (!navigator.clipboard) {
+        console.error('Clipboard API not available');
+        return;
+    }
+    
+    navigator.clipboard.writeText(url)
+        .then(() => {
+            const btn = document.getElementById('copyLinkBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check"></i>';
+            btn.title = 'Copied!';
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.title = 'Copy Link';
+            }, 2000);
+        })
+        .catch(err => {
+            console.error('Failed to copy link:', err);
+            alert('Failed to copy link to clipboard');
+        });
 }
 
 function toggleFullscreen() {
     const modalContent = document.querySelector('.modal-content');
     const btn = document.getElementById('fullscreenBtn');
+    
+    if (!document.fullscreenEnabled) {
+        console.warn('Fullscreen not supported');
+        return;
+    }
+    
     if (!document.fullscreenElement) {
-        modalContent.requestFullscreen();
-        btn.innerHTML = '<i class="fas fa-compress"></i>';
-        btn.title = 'Exit Fullscreen';
+        modalContent.requestFullscreen()
+            .then(() => {
+                btn.innerHTML = '<i class="fas fa-compress"></i>';
+                btn.title = 'Exit Fullscreen';
+            })
+            .catch(err => {
+                console.error('Failed to enter fullscreen:', err);
+                alert('Failed to enter fullscreen mode');
+            });
     } else {
-        document.exitFullscreen();
-        btn.innerHTML = '<i class="fas fa-expand"></i>';
-        btn.title = 'Fullscreen';
+        document.exitFullscreen()
+            .then(() => {
+                btn.innerHTML = '<i class="fas fa-expand"></i>';
+                btn.title = 'Fullscreen';
+            })
+            .catch(err => {
+                console.error('Failed to exit fullscreen:', err);
+            });
     }
 }
 
@@ -384,14 +477,13 @@ function loadFromHash() {
 
 // Theme Toggle
 function initTheme() {
-    const savedTheme = localStorage.getItem('theme') || 'dark';
-    document.documentElement.setAttribute('data-theme', savedTheme);
-    updateThemeIcon(savedTheme);
-}
-
-function updateThemeIcon(theme) {
-    const icon = document.getElementById('themeIcon');
-    icon.className = theme === 'dark' ? 'fas fa-moon' : 'fas fa-sun';
+    try {
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+    } catch (err) {
+        console.error('Failed to load theme from localStorage:', err);
+        document.documentElement.setAttribute('data-theme', 'dark');
+    }
 }
 
 // Navigation and About Section
@@ -435,8 +527,11 @@ window.addEventListener('DOMContentLoaded', () => {
         const currentTheme = document.documentElement.getAttribute('data-theme');
         const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
         document.documentElement.setAttribute('data-theme', newTheme);
-        localStorage.setItem('theme', newTheme);
-        updateThemeIcon(newTheme);
+        try {
+            localStorage.setItem('theme', newTheme);
+        } catch (err) {
+            console.error('Failed to save theme to localStorage:', err);
+        }
     });
     initTheme();
     init();

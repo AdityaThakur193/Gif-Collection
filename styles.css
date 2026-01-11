@@ -128,10 +128,32 @@ nav a.active {
     font-size: 16px;
     transition: color 0.15s ease;
     padding: 4px;
+    position: relative;
 }
 
 .theme-toggle:hover {
     color: var(--text-primary);
+}
+
+.theme-toggle svg {
+    display: block;
+    transition: opacity 0.2s ease;
+}
+
+[data-theme="dark"] .icon-sun {
+    display: none;
+}
+
+[data-theme="dark"] .icon-moon {
+    display: block;
+}
+
+[data-theme="light"] .icon-sun {
+    display: block;
+}
+
+[data-theme="light"] .icon-moon {
+    display: none;
 }
 
 /* Hero Section */
@@ -1041,6 +1063,15 @@ footer {
     .header-content {
         gap: 20px;
     }
+    
+    nav {
+        margin-left: auto;
+    }
+
+    /* Hide logo text on mobile */
+    .logo-text {
+        display: none;
+    }
 
     nav ul {
         gap: 20px;
@@ -1093,7 +1124,7 @@ footer {
     }
 
     .grid-controls {
-        flex-wrap: wrap;
+        display: none;
     }
 
     .back-to-top {
@@ -1164,6 +1195,10 @@ footer {
     .logo {
         font-size: 16px;
     }
+    
+    .logo-img {
+        height: 36px;
+    }
 
     .hero {
         padding: 48px 16px;
@@ -1199,5 +1234,39 @@ footer {
 
     .search-box input {
         max-width: 100%;
+    }
+    
+    /* Improve touch targets */
+    .theme-toggle,
+    .modal-close,
+    .back-to-top {
+        min-width: 44px;
+        min-height: 44px;
+    }
+    
+    /* Modal optimizations for mobile */
+    .modal-content {
+        min-height: auto;
+        max-height: 100vh;
+        padding: 16px;
+    }
+    
+    .modal-title {
+        font-size: 18px;
+    }
+    
+    .zoom-controls {
+        bottom: 80px;
+    }
+    
+    /* Better spacing for mobile */
+    .slideshow-controls {
+        margin-bottom: 24px;
+    }
+    
+    /* Make nav links easier to tap */
+    nav a {
+        padding: 8px;
+        font-size: 14px;
     }
 }
